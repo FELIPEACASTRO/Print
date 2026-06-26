@@ -37,11 +37,24 @@ A solução "Print" propõe uma metodologia que combina a apresentação control
         *   **Cores e Texturas:** Análise das características visuais primárias.
         *   **Padrões e Formas:** Identificação de elementos abstratos ou concretos.
         *   **Correlação com Respostas:** Comparação entre o que a IA "vê" na imagem e o que o paciente descreve, buscando discrepâncias ou concordâncias que possam ser psicologicamente significativas.
-    *   **Tecnologia:** Aplicação de modelos de Deep Learning para Visão Computacional (e.g., TensorFlow, PyTorch, OpenCV com modelos pré-treinados como YOLO, ResNet).
+    *   **Tecnologia:** Aplicação de modelos de Deep Learning para Visão Computacional (e.g., TensorFlow, PyTorch, OpenCV com modelos pré-treinados como YOLO, ResNet), com foco em otimização para inferência em tempo real.
+
+### Requisitos de Performance Crítica: Captura e Identificação em Tempo Real
+
+Um aspecto fundamental desta solução é a **velocidade de resposta**. Para garantir a validade e a aplicabilidade em contextos psicológicos, a identificação das imagens deve ocorrer o mais rápido possível. O sistema deve ser capaz de:
+
+*   **Capturar a imagem da tela ou o HTML da solução:** A entrada para o módulo de Visão Computacional pode vir diretamente de um "print" da tela onde a figura é exibida ou da análise do HTML que renderiza o estímulo visual.
+*   **Identificar o conteúdo da imagem em tempo real:** Desde o momento da captura até a identificação do que está sendo exibido, o processo deve ser otimizado para latência mínima. O objetivo é testar a velocidade de captação da imagem até a sua identificação, buscando um desempenho que permita uma análise quase instantânea.
+
+Este requisito de performance é crucial para a validade dos estudos psicológicos, permitindo a correlação precisa entre o estímulo visual, a resposta verbal do paciente e a identificação computacional do conteúdo da imagem em um *time-frame* relevante para a dinâmica da percepção humana.
 
 5.  **Módulo de Análise de Dados e Geração de Insights:**
     *   **Funcionalidade:** Consolidação dos dados do PLN e CV, aplicando algoritmos de análise estatística e aprendizado de máquina para gerar relatórios detalhados, visualizações e insights para o psicólogo. Isso pode incluir a identificação de padrões em grupos de pacientes, a evolução das respostas de um mesmo paciente ao longo do tempo, e a correlação entre características visuais e tipos de resposta.
     *   **Tecnologia:** Ferramentas de análise de dados (e.g., Pandas, NumPy, Scikit-learn) e visualização (e.g., Matplotlib, Seaborn, Plotly).
+
+## Requisitos de Performance
+
+Conforme detalhado na seção "Requisitos de Performance Crítica", a solução deve priorizar a **baixa latência** e a **alta velocidade** na captura e identificação de imagens. Isso implica na escolha de algoritmos e infraestrutura que permitam processamento quase em tempo real, desde a aquisição do estímulo visual (seja por captura de tela ou análise de HTML) até a sua interpretação pelo módulo de Visão Computacional.
 
 ## Tecnologias Sugeridas
 
