@@ -17,8 +17,9 @@ from typing import Optional, Dict, Any, List
 from deck_config import deck_db
 from config_loader import config_loader, ConfigLoader
 from screen_capture_config import get_monitor_info, calculate_roi_bbox, capture_roi
+from card_detector import detect_cards_on_screen
 
-app = FastAPI(title="Sistema de Identificação de Cartas via Screen Capture", version="2.0")
+app = FastAPI(title="Sistema de Identificação de Cartas via Screen Capture com Detecção Automática", version="2.0")
 
 # Configurações carregadas do config.json
 EXTERNAL_API_URL = config_loader.get_external_api_url()
@@ -894,3 +895,38 @@ async def list_deck():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+@app.post("/detect-auto")
+async def detect_cards_automatic(monitor_id: Optional[int] = None):
+    """
+    Endpoint de detecção automática por visão computacional:
+    
+    Detecta TODAS as cartas visíveis na tela SEM precisar de coordenadas pré-definidas.
+    Usa algoritmos de visão computacional para:
+    1. Capturar a tela inteira
+    2. Detectar contornos com formato de carta
+    3. Corrigir perspectiva e rotação
+    4. Identificar cada carta via hashing
+    
+    Funciona com QUALQUER baralho e em QUALQUER posição da tela.
+    Ideal para mesas de poker com até 9 jogadores.
+    
+    monitor_id (opcional): ID do monitor para captura
+    Exemplo: curl -X POST "http://localhost:8000/detect-auto?monitor_id=1"
+    """
+    try:
+        # Usa o detector de visão computacional
+        result = detect_cards_on_screen(monitor_id or MONITOR_ID)
+        
+        # Se encontrou cartas, chama API externa para cada uma
+        if result.get('cards'):
+            for card in result['cards']:
+                if card.get('identified_card', {}).get('code') != 'UNKNOWN':
+                    await call_external_api(card)
+        
+        return JSONResponse(content=result)
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na detecção automática: {str(e)}")
+

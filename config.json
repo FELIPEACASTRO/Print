@@ -241,17 +241,25 @@
       "description": "Carta comunitária 4"
     },
     {
+    },
+    {
       "id": "board_5",
       "category": "community_slot",
       "player": null,
       "seat_position": "middle",
       "card_side": "slot_5",
-      "percent_x": 0.539906103286,
-      "percent_y": 0.491179201486,
-      "percent_w": 0.015649452269,
-      "percent_h": 0.039925719591,
-      "enabled": true,
+      "detected_label": null,
       "description": "Carta comunitária 5"
     }
-  ]
+  ],
+  "detection_params": {
+    "min_card_area": 500,
+    "max_card_area": 50000,
+    "card_aspect_ratio_min": 1.2,
+    "card_aspect_ratio_max": 1.8,
+    "contour_approx_epsilon": 0.02,
+    "edge_detection_canny_low": 50,
+    "edge_detection_canny_high": 150,
+    "morphology_kernel_size": 5
+  }
 }
