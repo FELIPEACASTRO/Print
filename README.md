@@ -48,6 +48,10 @@ Um aspecto fundamental desta solução é a **velocidade de resposta**. Para gar
 
 Este requisito de performance é crucial para a validade dos estudos psicológicos, permitindo a correlação precisa entre o estímulo visual, a resposta verbal do paciente e a identificação computacional do conteúdo da imagem em um *time-frame* relevante para a dinâmica da percepção humana.
 
+### Inspiração na Eficiência do Firecrawl
+
+A abordagem de alta velocidade e baixa latência para a captura e identificação de imagens pode se inspirar em soluções como o **Firecrawl**. O Firecrawl é conhecido por sua capacidade de transformar qualquer website em dados facilmente analisáveis, com foco em eficiência e rapidez na extração de conteúdo, incluindo screenshots e análise de HTML, para aplicações de IA. A agilidade com que o Firecrawl processa e estrutura dados da web serve como um modelo para a performance que buscamos alcançar na captação e identificação de estímulos visuais, garantindo que a solução "Print" seja igualmente responsiva e eficaz em seu propósito.
+
 5.  **Módulo de Análise de Dados e Geração de Insights:**
     *   **Funcionalidade:** Consolidação dos dados do PLN e CV, aplicando algoritmos de análise estatística e aprendizado de máquina para gerar relatórios detalhados, visualizações e insights para o psicólogo. Isso pode incluir a identificação de padrões em grupos de pacientes, a evolução das respostas de um mesmo paciente ao longo do tempo, e a correlação entre características visuais e tipos de resposta.
     *   **Tecnologia:** Ferramentas de análise de dados (e.g., Pandas, NumPy, Scikit-learn) e visualização (e.g., Matplotlib, Seaborn, Plotly).
