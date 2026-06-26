@@ -3,47 +3,42 @@
 *.pyc
 __pycache__/
 
-# Logs
-*.log
-
 # Environment files
 .env
 .env.local
 *.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
 
 # Coverage reports
 .coverage
 coverage/
 htmlcov/
 
-# Temporary files
-*.tmp
-*.swp
-*.swo
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Dependencies
-.julia/
-zig*/
-target/
-.gradle/
-
 # IDE specific
 .vscode/
 .idea/
-*.iml
 
-# MyPy cache
+# Dependencies
+.venv/
+venv/
 .mypy_cache/
-
-# PyTest cache
 .pytest_cache/
 
-# Distribution / packaging
+# Build artifacts
 dist/
 build/
-*.egg-info/
+target/
+
+# Node.js
+node_modules/
+
+# OS generated
+.DS_Store
+Thumbs.db
 ```

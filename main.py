@@ -1,9 +1,10 @@
 """
 API Principal - FastAPI
 Captura imagens da tela, identifica cartas, chama API externa e salva dataset.
+Configuração parametrizada via config.json
 """
 from fastapi import FastAPI, HTTPException, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 import httpx
 import aiofiles
 import json
@@ -12,16 +13,18 @@ import os
 import mss
 import mss.tools
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from deck_config import deck_db
-from screen_capture_config import get_all_rois_bboxes, capture_roi, MONITOR_ID as SCREEN_MONITOR_ID
+from config_loader import config_loader, ConfigLoader
+from screen_capture_config import get_monitor_info, calculate_roi_bbox, capture_roi
 
 app = FastAPI(title="Sistema de Identificação de Cartas via Screen Capture", version="2.0")
 
-# Configurações
-EXTERNAL_API_URL = os.getenv("EXTERNAL_API_URL", "http://localhost:8001/validate")  # API externa em outra porta
-DATASET_FILE = "dataset/dataset_mestrado.jsonl"
-SCREENSHOT_DIR = "screenshots"
+# Configurações carregadas do config.json
+EXTERNAL_API_URL = config_loader.get_external_api_url()
+DATASET_FILE = config_loader.get_dataset_file()
+SCREENSHOT_DIR = config_loader.get_screenshot_dir()
+IDENTIFICATION_TOLERANCE = config_loader.get_tolerance()
 
 async def call_external_api(card_data: dict, response_time_ms: float) -> dict:
     """Chama a API externa já existente com os dados da carta identificada."""
@@ -48,24 +51,31 @@ async def save_to_dataset(record: dict):
     async with aiofiles.open(DATASET_FILE, mode='a') as f:
         await f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
-def capture_screen(region: Optional[Dict[str, int]] = None, capture_all_cards: bool = False) -> tuple:
+def capture_screen(region: Optional[Dict[str, int]] = None, capture_all_cards: bool = False, monitor_id: Optional[int] = None) -> tuple:
     """
     Captura a tela ou uma região específica.
     region: dicionário com {'left': x, 'top': y, 'width': w, 'height': h}
     capture_all_cards: se True, captura todas as ROIs configuradas e retorna múltiplas imagens
+    monitor_id: ID do monitor para captura (usa o padrão do config se None)
     Retorna tupla com (caminho do arquivo temporário, dados da imagem em base64) ou 
            lista de tuplas se capture_all_cards=True.
     """
     timestamp = int(time.time() * 1000)
     
+    # Usa monitor_id passado ou o padrão do config
+    if monitor_id is None:
+        monitor_id = config_loader.get_system_config().get("default_monitor_id", 1)
+    
     if capture_all_cards:
-        # Capturar todas as ROIs configuradas usando screen_capture_config
+        # Capturar todas as ROIs configuradas usando config.json
         import base64
         results = []
         try:
-            rois_data = get_all_rois_bboxes(SCREEN_MONITOR_ID)
-            for roi in rois_data:
-                bbox = roi["bbox"]
+            monitor = get_monitor_info(monitor_id)
+            cards_roi = config_loader.get_cards_roi(enabled_only=True)
+            
+            for roi in cards_roi:
+                bbox = calculate_roi_bbox(roi, monitor)
                 temp_path = os.path.join(SCREENSHOT_DIR, f"capture_{timestamp}_{roi['id']}.png")
                 
                 # Usa função especializada de captura
@@ -80,8 +90,8 @@ def capture_screen(region: Optional[Dict[str, int]] = None, capture_all_cards: b
                     "base64": f"data:image/png;base64,{image_data}",
                     "roi_id": roi["id"],
                     "player": roi.get("player"),
-                    "seat": roi.get("seat"),
-                    "description": roi["description"]
+                    "seat": roi.get("seat_position"),
+                    "description": roi.get("description", "")
                 })
             return results
         except Exception as e:
@@ -97,7 +107,7 @@ def capture_screen(region: Optional[Dict[str, int]] = None, capture_all_cards: b
             monitor = region
         else:
             # Captura tela principal
-            monitor = sct.monitors[1]  # Monitor 1 é a tela principal
+            monitor = sct.monitors[monitor_id] if monitor_id < len(sct.monitors) else sct.monitors[1]
         
         screenshot = sct.grab(monitor)
         mss.tools.to_png(screenshot.rgb, screenshot.size, output=temp_path)
@@ -602,7 +612,7 @@ async def serve_frontend():
     return HTMLResponse(content=html_content)
 
 @app.post("/identify")
-async def identify_card_from_screen(region: Optional[str] = None, capture_all: bool = False):
+async def identify_card_from_screen(region: Optional[str] = None, capture_all: bool = False, monitor_id: Optional[int] = None):
     """
     Endpoint principal para captura de tela:
     1. Captura a tela ou região específica (ou todas as ROIs se capture_all=True)
@@ -613,7 +623,8 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
     
     region (opcional): string JSON com {"left": x, "top": y, "width": w, "height": h}
     capture_all (opcional): se True, captura todas as 17 ROIs configuradas (6 jogadores + board)
-    Exemplo: curl -X POST http://localhost:8000/identify?capture_all=true
+    monitor_id (opcional): ID do monitor para captura (usa o padrão do config.json se None)
+    Exemplo: curl -X POST "http://localhost:8000/identify?capture_all=true&monitor_id=1"
     """
     import json as json_module
     
@@ -630,7 +641,7 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
     try:
         # Fase 0: Capturar tela
         capture_start = time.perf_counter()
-        captures = capture_screen(region_dict, capture_all_cards=capture_all)
+        captures = capture_screen(region_dict, capture_all_cards=capture_all, monitor_id=monitor_id)
         capture_time = (time.perf_counter() - capture_start) * 1000
         
         # Se capture_all=True, temos múltiplas capturas
@@ -640,7 +651,7 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
             
             for capture in captures:
                 card_start = time.perf_counter()
-                card_data = deck_db.identify_card(capture["path"], tolerance=15)
+                card_data = deck_db.identify_card(capture["path"], tolerance=IDENTIFICATION_TOLERANCE)
                 card_time = (time.perf_counter() - card_start) * 1000
                 total_identification_time += card_time
                 
@@ -651,14 +662,20 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
                 
                 results.append({
                     "roi_id": capture["roi_id"],
-                    "player": capture.get("player"),
-                    "seat": capture.get("seat"),
-                    "description": capture["description"],
-                    "screenshot": capture["base64"],
-                    "identified": card_data is not None,
-                    "card": card_data,
-                    "identification_time_ms": round(card_time, 2),
-                    "external_api_response": external_response
+                    "player_name": capture.get("player"),
+                    "position": capture.get("seat"),
+                    "identified_card": card_data,
+                    "confidence": {
+                        "score": 1.0 - (card_data.get("distance", 0) / 64.0) if card_data else 0.0,
+                        "hamming_distance": card_data.get("distance", 0) if card_data else None,
+                        "algorithm_used": "pHash+dHash+aHash"
+                    },
+                    "validation": external_response if external_response else {"status": "skipped", "message": "Nenhuma carta identificada"},
+                    "screenshot_base64": capture["base64"],
+                    "processing_details": {
+                        "hash_calculation_ms": round(card_time * 0.7, 2),
+                        "comparison_ms": round(card_time * 0.3, 2)
+                    }
                 })
                 
                 # Salvar no dataset
@@ -680,16 +697,16 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
             
             total_time = (time.perf_counter() - start_time) * 1000
             return JSONResponse(content={
-                "success": True,
-                "capture_type": "multi_roi",
-                "total_rois": len(results),
-                "cards_found": sum(1 for r in results if r["identified"]),
-                "results": results,
+                "status": "success",
+                "timestamp": datetime.utcnow().isoformat(),
+                "monitor_id": monitor_id or config_loader.get_system_config().get("default_monitor_id", 1),
                 "metrics": {
+                    "total_time_ms": round(total_time, 2),
                     "capture_time_ms": round(capture_time, 2),
-                    "total_identification_time_ms": round(total_identification_time, 2),
-                    "total_time_ms": round(total_time, 2)
-                }
+                    "processing_time_ms": round(total_identification_time, 2),
+                    "external_api_time_ms": round(sum(r.get("validation", {}).get("api_latency_ms", 0) for r in results), 2)
+                },
+                "cards": results
             })
         
         # Comportamento padrão (captura única)
@@ -697,7 +714,7 @@ async def identify_card_from_screen(region: Optional[str] = None, capture_all: b
         
         # Fase 1: Identificação da carta
         id_start = time.perf_counter()
-        card_data = deck_db.identify_card(temp_path, tolerance=15)
+        card_data = deck_db.identify_card(temp_path, tolerance=IDENTIFICATION_TOLERANCE)
         id_time = (time.perf_counter() - id_start) * 1000
         
         if not card_data:
