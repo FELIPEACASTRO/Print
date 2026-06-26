@@ -4,7 +4,6 @@ Pré-processa as imagens das cartas para identificação ultrarrápida.
 Usa combinação de múltiplos hashes para máxima precisão.
 """
 import os
-import cv2
 import imagehash
 from PIL import Image
 from typing import Dict, Optional, Tuple
@@ -66,7 +65,11 @@ class DeckDatabase:
                 
                 if len(parts) >= 2:
                     valor = parts[0]
-                    naipe = '_'.join(parts[1:])
+                    # Caso especial para CORINGA
+                    if valor == "CORINGA":
+                        naipe = "CORINGA"
+                    else:
+                        naipe = '_'.join(parts[1:])
                 else:
                     valor = name_without_ext
                     naipe = "DESCONHECIDO"

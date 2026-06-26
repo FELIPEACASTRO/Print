@@ -1,41 +1,49 @@
 ```
-# Python
-__pycache__/
+# Compiled Python files
 *.pyc
-*.pyo
-*.pyd
+__pycache__/
 
 # Logs
 *.log
 
-# Environment
+# Environment files
 .env
 .env.local
 *.env.*
 
-# Dependencies
-venv/
-.venv/
-.env/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Coverage
+# Coverage reports
 .coverage
-htmlcov/
 coverage/
+htmlcov/
 
-# IDE
-.vscode/
-.idea/
+# Temporary files
+*.tmp
 *.swp
 *.swo
-*.tmp
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
+
+# Dependencies
+.julia/
+zig*/
+target/
+.gradle/
+
+# IDE specific
+.vscode/
+.idea/
+*.iml
+
+# MyPy cache
+.mypy_cache/
+
+# PyTest cache
+.pytest_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
 ```
